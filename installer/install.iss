@@ -103,6 +103,7 @@ Name: assoc; Description: Associate .git* configuration files with the default t
 Name: assoc_sh; Description: Associate .sh files to be run with Bash; Types: default
 Name: consolefont; Description: Use a TrueType font in all console windows
 Name: autoupdate; Description: Check daily for Git for Windows updates
+Name: nativeopenssh; Description: Use Native OpenSSH; Check: IsNativeOpenSSHAvailable
 
 [Run]
 Filename: {app}\git-bash.exe; Parameters: --cd-to-home; Description: Launch Git Bash; Flags: nowait postinstall skipifsilent runasoriginaluser unchecked
@@ -258,6 +259,7 @@ Type: dirifempty; Name: {app}
 #include "helpers.inc.iss"
 #include "environment.inc.iss"
 #include "putty.inc.iss"
+#include "nativeopenssh.inc.iss"
 #include "modules.inc.iss"
 
 procedure LogError(Msg:String);
@@ -2146,6 +2148,21 @@ begin
 
     if IsComponentInstalled('autoupdate') then
         InstallAutoUpdater();
+
+    {
+        When the user prefers the native OpenSSH, use that instead of our bundled one.
+    }
+    if IsComponentInstalled('nativeopenssh') then begin
+        if not DeleteFile(AppDir + '/usr/bin/ssh-add.exe') or
+            not DeleteFile(AppDir + '/usr/bin/ssh-agent.exe') or
+            not DeleteFile(AppDir + '/usr/bin/ssh-copy-id') or
+            not DeleteFile(AppDir + '/usr/bin/ssh-keygen.exe') or
+            not DeleteFile(AppDir + '/usr/bin/ssh-keyscan.exe') or
+            not DeleteFile(AppDir + '/usr/bin/ssh-pageant.exe') or
+            not DeleteFile(AppDir + '/usr/bin/ssh.exe') or
+            not DeleteFile(AppDir + '/usr/bin/sshd.exe') then
+            LogError('Line {#__LINE__}: Unable to uninstall bundled OpenSSH');
+    end;
 
     {
         Run post-install scripts to set up system environment
